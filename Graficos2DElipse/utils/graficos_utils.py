@@ -44,34 +44,30 @@ def graficar_rutas_puntos_colision(resultados, trayectorias, ax):
                 ax.scatter(x_pcr, y_pcr, color="black", s=50, zorder=6, label=label_puntos)
                 ya_mostrado.add(label_puntos)
 
-def graficar_dos_elipses(e1, e2, idx1, idx2, ruta, puntos_cruce):
-    fig, ax = plt.subplots()
-    # Graficar las dos elipses
+def graficar_dos_elipses(e1, e2, idx1, idx2, ruta, puntos_cruce, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots()
     colores = ["blue", "green"]
     for i, (el, color) in enumerate(zip([e1, e2], colores)):
         x, y = el.puntos()
         ax.plot(x, y, color=color, linewidth=2, label=f"RUT: {el.rut}")
-    # Marcar los centros como círculo abierto y con color distintivo
     centros_colores = ["magenta", "orange"]
     nombres = [f"Centro O{idx1+1}", f"Centro O{idx2+1}"]
     for i, (el, color, nombre) in enumerate(zip([e1, e2], centros_colores, nombres)):
-        ax.scatter([el.h], [el.k], s=80, marker="o", edgecolor=color, facecolors='none',
-                   linewidths=2, zorder=7, label=nombre)
-    # Graficar ruta de cruce
+        ax.scatter([el.h], [el.k], s=80, marker="o", edgecolor=color, facecolors='none', linewidths=2, zorder=7, label=nombre)
     if ruta:
         x_col, y_col = zip(*ruta)
         centro = np.mean(np.column_stack((x_col, y_col)), axis=0)
         angulos = np.arctan2(np.array(y_col) - centro[1], np.array(x_col) - centro[0])
         orden = np.argsort(angulos)
         ax.plot(np.array(x_col)[orden], np.array(y_col)[orden], color="red", linewidth=2, label="Ruta de cruce")
-    # Graficar puntos de cruce
     if puntos_cruce:
         x_pcr, y_pcr = zip(*puntos_cruce)
         ax.scatter(x_pcr, y_pcr, color="black", s=50, zorder=6, label="Puntos de cruce")
+    ax.set_title("Colisión específica: dos elipses seleccionadas")
     ax.set_aspect('equal')
     ax.legend()
-    ax.set_title("Colisión específica: dos elipses seleccionadas")
-    plt.show()
+
 
 def guardar_figura(fig, ruta_archivo):
     fig.savefig(ruta_archivo, bbox_inches='tight')

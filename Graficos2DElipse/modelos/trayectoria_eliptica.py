@@ -12,14 +12,35 @@ class TrayectoriaEliptica:
 
     @classmethod
     def desde_rut(cls, rut: str):
-        digits = [int(d) for d in rut if d.isdigit()]
-        if len(digits) < 6:
-            raise ValueError("El RUT debe tener al menos 6 dígitos para este mapeo")
-        a = 10 + digits[0] % 10
-        b = 5 + digits[1] % 5
-        h = int(''.join(map(str, digits[2:4])))
-        k = int(''.join(map(str, digits[4:6])))
-        theta = (digits[-1] % 10) * (np.pi / 10)
+        partes = rut.strip().split('-')
+        if len(partes) != 2:
+            raise ValueError("Formato de RUT incorrecto (debe ser XXXXXXXX-Y)")
+
+        rut_sin_dv = partes[0].replace('.', '')
+        dv = partes[1].upper()
+
+        if dv == 'K':
+            dv = '10'
+
+        if not dv.isdigit():
+            raise ValueError("El dígito verificador debe ser un número o 'K'.")
+
+        digits = [int(d) for d in rut_sin_dv if d.isdigit()]
+        if len(digits) < 8:
+            raise ValueError("El RUT debe tener al menos 8 dígitos antes del DV.")
+
+        dv_int = int(dv)
+        h, k = digits[0], digits[1]
+
+        if dv_int % 2 == 1:
+            a = digits[2] + digits[3]
+            b = digits[4] + digits[5]
+            theta = 0 if digits[5] % 2 == 0 else np.pi / 2
+        else:
+            a = digits[5] + digits[6]
+            b = digits[4] + digits[2]
+            theta = 0 if digits[3] % 2 == 0 else np.pi / 2
+
         return cls(h, k, a, b, theta, rut)
 
     def calcular_posicion(self, t):
