@@ -1,6 +1,6 @@
 from modelos.trayectoria_eliptica import TrayectoriaEliptica
 from servicios.colisionador_trayectorias import ColisionadorTrayectorias
-from utils.graficos_utils import graficar_elipses, graficar_centros, graficar_rutas_puntos_colision, graficar_dos_elipses
+from utils.graficos_utils_mat import graficar_elipses, graficar_centros, graficar_rutas_puntos_colision, graficar_dos_elipses
 import matplotlib.pyplot as plt
 
 def mostrar_menu():
