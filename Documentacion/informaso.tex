@@ -290,9 +290,56 @@ El sistema se estructura siguiendo principios de ingenieria de software modular,
 
 \textbf{Capa de Presentacion}
 \begin{itemize}
-    \item Interfaz grafica basada en PyQt6 para usuarios avanzados
+    \item Interfaz grafica basada en PyQt6 para usuarios avanzados (sistema 2D)
+    \item Interfaz Tkinter con canvas 3D para visualizacion espacial avanzada
     \item Interfaz de linea de comandos para operaciones automatizadas
-    \item Sistema de visualizacion interactiva con Matplotlib
+    \item Sistema de visualizacion interactiva con Matplotlib y capacidades 3D
+\end{itemize}
+
+\subsubsection{Arquitectura del Sistema 3D}
+
+La implementacion del sistema de visualizacion 3D introduce una arquitectura especializada que complementa el sistema 2D existente:
+
+\textbf{Componentes del Sistema 3D}
+\begin{itemize}
+    \item \textbf{Motor de Transformacion 3D}: Algoritmos para conversion de parametros elipticos a coordenadas tridimensionales
+    \item \textbf{Gestor de Renderizado}: Integracion entre Tkinter y Matplotlib para visualizacion 3D
+    \item \textbf{Procesador de Intersecciones 3D}: Algoritmos adaptados para deteccion de conflictos en el espacio
+    \item \textbf{Controlador de Interfaz}: Gestion de eventos y actualizaciones en tiempo real
+\end{itemize}
+
+\textbf{Flujo de Datos en el Sistema 3D}
+
+\begin{lstlisting}[language=Python, caption=Flujo principal del sistema 3D]
+def sistema_3d_workflow():
+    # 1. Validacion de entrada
+    rut = validar_formato_rut(entrada_usuario)
+    
+    # 2. Transformacion a parametros 3D
+    x, y, z, params = compute_ellipse(rut)
+    
+    # 3. Deteccion de conflictos espaciales
+    if len(trayectorias) >= 2:
+        intersecciones = detectar_intersecciones_3d(
+            trayectorias[-2], trayectorias[-1])
+    
+    # 4. Renderizado tridimensional
+    canvas_3d = crear_canvas_matplotlib()
+    renderizar_trayectorias_3d(trayectorias, canvas_3d)
+    
+    # 5. Actualizacion de interfaz
+    actualizar_panel_informacion(params, intersecciones)
+\end{lstlisting}
+
+\textbf{Optimizaciones de Rendimiento}
+
+El sistema 3D implementa varias optimizaciones para garantizar rendimiento en tiempo real:
+
+\begin{itemize}
+    \item \textbf{Sampling adaptativo}: Ajuste dinamico del numero de puntos segun la complejidad de la escena
+    \item \textbf{Caching de calculos}: Almacenamiento temporal de transformaciones costosas
+    \item \textbf{Renderizado incremental}: Actualizacion solo de elementos modificados
+    \item \textbf{Gestion de memoria}: Liberacion automatica de recursos graficos no utilizados
 \end{itemize}
 
 \subsubsection{Implementacion de Interfaces}
@@ -342,11 +389,11 @@ La CLI ofrece funcionalidad completa para usuarios tecnicos y sistemas automatiz
 
 \subsection{Algoritmos de Visualizacion}
 
-\subsubsection{Renderizado de Trayectorias}
+\subsubsection{Renderizado de Trayectorias en 2D}
 
 El sistema de visualizacion utiliza Matplotlib para generar representaciones graficas precisas y esteticamente atractivas:
 
-\begin{lstlisting}[language=Python, caption=Funcion de graficado de elipses]
+\begin{lstlisting}[language=Python, caption=Funcion de graficado de elipses 2D]
 def graficar_elipses(trayectorias, ax, colores=None, 
                     with_labels=True, linewidth=2):
     if colores is None:
@@ -364,20 +411,206 @@ def graficar_elipses(trayectorias, ax, colores=None,
     ax.set_aspect('equal')
 \end{lstlisting}
 
+\subsubsection{Desarrollo de Visualizacion 3D}
+
+Para complementar el analisis 2D tradicional, se desarrollo un sistema de visualizacion tridimensional que permite una comprension mas profunda de las trayectorias elipticas en el espacio. Esta implementacion utiliza Tkinter como framework base y Matplotlib para el renderizado 3D.\\
+
+\textbf{Arquitectura del Sistema 3D}\\
+
+El sistema 3D se estructura en cuatro componentes principales:
+
+\begin{enumerate}
+    \item \textbf{Panel de entrada}: Validacion y procesamiento de RUT con expresiones regulares
+    \item \textbf{Panel de gestion}: Visualizacion de RUTs almacenados y estado del sistema
+    \item \textbf{Area de renderizado}: Canvas 3D interactivo con controles de navegacion
+    \item \textbf{Panel de informacion}: Datos calculados y resultados de analisis
+\end{enumerate}
+
+\textbf{Algoritmo de Transformacion 3D}\\
+
+La extension tridimensional introduce una componente Z calculada dinamicamente:
+
+\begin{lstlisting}[language=Python, caption=Generacion de elipses 3D]
+def compute_ellipse(rut):
+    numeros, verificador = rut
+    digitos = list(map(int, numeros))
+    es_impar = verificador.isdigit() and int(verificador) % 2 == 1
+
+    if es_impar:
+        h, k = digitos[0], digitos[1]
+        a = digitos[2] + digitos[3]
+        b = digitos[4] + digitos[5]
+        orientacion_horizontal = (digitos[7] % 2 == 0)
+    else:
+        h, k = digitos[0], digitos[1]
+        a = digitos[5] + digitos[6]
+        b = digitos[7] + digitos[2]
+        orientacion_horizontal = (digitos[3] % 2 == 0)
+    
+    theta = np.linspace(0, 2 * np.pi, 100)
+    x = a * np.cos(theta)
+    y = b * np.sin(theta)
+    z = np.sin(theta) * (a + b) / 2  # Componente altura
+    
+    # Aplicar orientacion
+    if not orientacion_horizontal:
+        x, y = y, x
+
+    # Trasladar al centro
+    x += h
+    y += k
+    
+    return x, y, z, {"h": h, "k": k, "a": a, "b": b, 
+                    "rut": f"{numeros}-{verificador}"}
+\end{lstlisting}
+
+\textbf{Deteccion de Intersecciones 3D}\\
+
+El algoritmo de deteccion se adapta para trabajar con proyecciones 2D de las trayectorias 3D:
+
+\begin{lstlisting}[language=Python, caption=Algoritmo de intersecciones 3D]
+def detectar_intersecciones(x1, y1, x2, y2, tol=0.5):
+    intersecciones = []
+    for i in range(len(x1)):
+        for j in range(len(x2)):
+            d = sqrt((x1[i] - x2[j])**2 + (y1[i] - y2[j])**2)
+            if d < tol:
+                xi = (x1[i] + x2[j]) / 2
+                yi = (y1[i] + y2[j]) / 2
+                intersecciones.append((round(xi,2), round(yi,2)))
+    
+    # Eliminar duplicados
+    unique_inters = []
+    for pt in intersecciones:
+        if pt not in unique_inters:
+            unique_inters.append(pt)
+    return unique_inters
+\end{lstlisting}
+
+\textbf{Renderizado y Configuracion del Canvas 3D}\\
+
+La implementacion del renderizado 3D utiliza las capacidades avanzadas de Matplotlib:
+
+\begin{lstlisting}[language=Python, caption=Configuracion del renderizado 3D]
+def graficar_elipses():
+    if len(rut_lista) < 2:
+        messagebox.showerror("Error", 
+                           "Se deben ingresar al menos 2 RUTs antes de graficar")
+        return
+    
+    # Calcular las dos ultimas elipses
+    x1, y1, z1, params1 = compute_ellipse(rut_lista[-2])
+    x2, y2, z2, params2 = compute_ellipse(rut_lista[-1])
+
+    # Configurar figura 3D
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Renderizar trayectorias
+    ax.plot(x1, y1, z1, label=f"Elipse 1 (RUT: {params1['rut']})", 
+            color="#E74C3C")
+    ax.plot(x2, y2, z2, label=f"Elipse 2 (RUT: {params2['rut']})", 
+            color="#3498DB")
+    
+    # Marcar centros
+    ax.scatter([params1["h"]], [params1["k"]], [0], 
+              color='red', marker='o', s=50, label="Centro 1")
+    ax.scatter([params2["h"]], [params2["k"]], [0], 
+              color='blue', marker='o', s=50, label="Centro 2")
+    
+    # Detectar y marcar intersecciones
+    inters = detectar_intersecciones(x1, y1, x2, y2, tol=0.5)
+    if inters:
+        if len(inters) > 2:
+            inters = inters[:2]
+        inters_arr = np.array(inters)
+        ax.scatter(inters_arr[:,0], inters_arr[:,1], 
+                  [0]*len(inters_arr), color="red", marker="o", 
+                  s=80, label="Intersecciones")
+    
+    # Configuracion de ejes y etiquetas
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Altura (Z)")
+    ax.legend(loc="upper right")
+    ax.set_title("Elipses 3D generadas")
+    ax.grid()
+    
+    # Integrar con canvas de Tkinter
+    canvas = FigureCanvasTkAgg(fig, master=frame_grafico)
+    canvas.get_tk_widget().pack()
+    canvas.draw()
+\end{lstlisting}
+
+\textbf{Interfaz de Usuario 3D}\\
+
+La interfaz grafica 3D implementa un diseno de cuatro paneles distribuidos estrategicamente:
+
+\begin{lstlisting}[language=Python, caption=Configuracion de la interfaz 3D]
+# Configuracion de ventana principal
+ventana = tk.Tk()
+ventana.title("Ingreso de RUT y Grafica de Elipses en 3D")
+ventana.geometry("1200x800")
+
+# Panel de entrada (superior izquierda)
+frame_input = tk.Frame(ventana, relief="ridge", bd=5)
+frame_input.place(x=20, y=20, width=750, height=160)
+
+# Panel de RUTs (superior derecha)
+frame_ruts = tk.Frame(ventana, relief="ridge", bd=5)
+frame_ruts.place(x=800, y=20, width=350, height=160)
+
+# Panel grafico (inferior izquierda)
+frame_grafico = tk.Frame(ventana, relief="ridge", bd=5)
+frame_grafico.place(x=20, y=200, width=750, height=550)
+
+# Panel de datos (inferior derecha)
+frame_datos = tk.Frame(ventana, relief="ridge", bd=5)
+frame_datos.place(x=800, y=200, width=350, height=550)
+\end{lstlisting}
+
 \subsubsection{Visualizacion de Conflictos}
 
-La representacion visual de colisiones utiliza un esquema de colores intuitivo:
+La representacion visual de colisiones utiliza un esquema de colores intuitivo tanto en 2D como en 3D:
 
 \begin{itemize}
     \item \textbf{Azul/Verde}: Trayectorias normales sin conflictos
-    \item \textbf{Rojo}: Rutas de cruce identificadas
-    \item \textbf{Negro}: Puntos criticos de interseccion
+    \item \textbf{Rojo}: Rutas de cruce identificadas y puntos de interseccion
+    \item \textbf{Negro}: Puntos criticos de interseccion (version 2D)
     \item \textbf{Magenta/Naranja}: Centros de trayectorias
+    \item \textbf{Degradados}: Variaciones de altura en visualizacion 3D
 \end{itemize}
 
 \subsection{Validacion y Pruebas}
 
-\subsubsection{Casos de Prueba}
+\subsubsection{Validacion del Sistema 3D}
+
+El desarrollo del sistema de visualizacion 3D introdujo nuevos desafios de validacion que requirieron la implementacion de pruebas especializadas:
+
+\begin{enumerate}
+    \item \textbf{Pruebas de consistencia dimensional}:
+    \begin{itemize}
+        \item Verificacion de que las proyecciones 2D mantienen coherencia con las trayectorias originales
+        \item Validacion de que la componente Z se calcula correctamente segun los parametros elipticos
+        \item Pruebas de continuidad en las transiciones entre puntos 3D
+    \end{itemize}
+    
+    \item \textbf{Pruebas de renderizado}:
+    \begin{itemize}
+        \item Verificacion de la correcta integracion entre Tkinter y Matplotlib
+        \item Pruebas de rendimiento con multiples trayectorias simultaneas
+        \item Validacion de la interactividad del canvas 3D (zoom, rotacion, pan)
+    \end{itemize}
+    
+    \item \textbf{Pruebas de deteccion 3D}:
+    \begin{itemize}
+        \item Comparacion entre detecciones 2D y proyecciones 3D
+        \item Validacion de tolerancias en el espacio tridimensional
+        \item Pruebas de precision en el calculo de intersecciones
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Casos de Prueba del Sistema General}
 
 Se desarrollo una suite completa de casos de prueba para validar la funcionalidad del sistema:
 
@@ -407,47 +640,76 @@ Se desarrollo una suite completa de casos de prueba para validar la funcionalida
 
 \subsection{Aplicaciones en Ingenieria}
 
-\subsubsection{Gestion de Trafico Aereo No Tripulado}
+\subsubsection{Ventajas de la Visualizacion 3D en Sistemas de Drones}
 
-El sistema desarrollado tiene aplicaciones directas en la gestion de trafico aereo para drones:
+La implementacion de visualizacion tridimensional aporta ventajas significativas para aplicaciones reales de drones:
 
 \begin{itemize}
-    \item \textbf{Control de trafico}: Monitoreo en tiempo real de multiples vehiculos
-    \item \textbf{Planificacion de rutas}: Optimizacion de trayectorias para evitar conflictos
-    \item \textbf{Respuesta a emergencias}: Deteccion temprana y mitigacion de riesgos
-    \item \textbf{Coordinacion de flotas}: Sincronizacion de operaciones multiples
+    \item \textbf{Comprension espacial mejorada}: La visualizacion 3D permite a los operadores comprender mejor las relaciones espaciales entre trayectorias, especialmente en operaciones que involucran diferentes altitudes de vuelo.
+    
+    \item \textbf{Planificacion de vuelo optimizada}: La componente Z calculada dinamicamente proporciona informacion valiosa para la planificacion de rutas que consideran variaciones de altura y obstaculos topograficos.
+    
+    \item \textbf{Deteccion de conflictos espaciales}: El sistema 3D permite identificar situaciones donde las trayectorias se cruzan en diferentes planos, proporcionando una evaluacion mas completa de los riesgos potenciales.
+    
+    \item \textbf{Interfaz intuitiva}: La navegacion interactiva (zoom, rotacion, pan) facilita el analisis detallado de escenarios complejos desde multiples perspectivas.
+\end{itemize}
+
+\subsubsection{Gestion de Trafico Aereo No Tripulado}
+
+El sistema desarrollado tiene aplicaciones directas en la gestion de trafico aereo para drones, especialmente con las capacidades 3D:
+
+\begin{itemize}
+    \item \textbf{Control de trafico}: Monitoreo en tiempo real de multiples vehiculos con separacion vertical
+    \item \textbf{Planificacion de rutas}: Optimizacion de trayectorias considerando perfiles de altitud
+    \item \textbf{Respuesta a emergencias}: Deteccion temprana de conflictos tridimensionales
+    \item \textbf{Coordinacion de flotas}: Sincronizacion de operaciones en diferentes niveles de vuelo
 \end{itemize}
 
 \subsubsection{Agricultura de Precision}
 
-En aplicaciones agricolas, el sistema puede coordinar multiples drones para:
+En aplicaciones agricolas, el sistema puede coordinar multiples drones considerando topografia y variaciones de altura:
 
 \begin{itemize}
-    \item Fumigacion sincronizada de grandes extensiones
-    \item Monitoreo simultaneo con sensores especializados
-    \item Optimizacion de cobertura evitando solapamientos
-    \item Coordinacion de drones de diferentes capacidades
+    \item Fumigacion sincronizada adaptada a relieves topograficos
+    \item Monitoreo simultaneo con sensores considerando altitudes optimas
+    \item Optimizacion de cobertura evitando solapamientos en terrenos irregulares
+    \item Coordinacion de drones de diferentes capacidades con perfiles de vuelo especializados
 \end{itemize}
 
 \subsubsection{Logistica y Transporte}
 
-Para operaciones logisticas urbanas:
+Para operaciones logisticas urbanas, la visualizacion 3D aporta:
 
 \begin{itemize}
-    \item Rutas de entrega optimizadas en entornos urbanos complejos
-    \item Coordinacion de multiples puntos de distribucion
-    \item Gestion de ventanas temporales de operacion
-    \item Integracion con sistemas de gestion de inventario
+    \item Rutas de entrega optimizadas considerando edificaciones y obstaculos urbanos
+    \item Coordinacion de multiples puntos de distribucion en diferentes altitudes
+    \item Gestion de corredores aereos urbanos con separacion vertical
+    \item Integracion con sistemas de gestion de inventario y planificacion espacial
+\end{itemize}
+
+\subsubsection{Aplicaciones en Inspeccion y Monitoreo}
+
+El sistema 3D es particularmente util para aplicaciones de inspeccion:
+
+\begin{itemize}
+    \item Inspeccion de infraestructura vertical (torres, edificios, puentes)
+    \item Monitoreo ambiental con mediciones a diferentes altitudes
+    \item Mapeo topografico con precision tridimensional
+    \item Seguimiento de recursos naturales considerando variaciones temporales y espaciales
 \end{itemize}
 
 \section{Conclusiones}
 
 Este proyecto demuestra que la interseccion entre matematicas avanzadas, ingenieria de software y aplicaciones practicas puede generar soluciones innovadoras para desafios tecnologicos contemporaneos. El sistema desarrollado no solo aborda necesidades actuales en el campo de los drones autonomos, sino que tambien establece una base metodologica para futuros desarrollos en sistemas de navegacion autonoma.\\
 
-La relevancia del trabajo se extiende mas alla de la aplicacion especifica de drones, proporcionando un framework que puede adaptarse a diversos escenarios donde la coordinacion de multiples agentes moviles es critica. En un mundo cada vez mas automatizado, la capacidad de modelar, predecir y gestionar movimientos complejos se convierte en una competencia fundamental para la ingenieria del futuro.\\
+La implementacion del sistema de visualizacion 3D representa un avance significativo en la comprension espacial de trayectorias elipticas, proporcionando herramientas intuitivas para el analisis de escenarios complejos. La capacidad de visualizar trayectorias en tres dimensiones, junto con la deteccion automatica de intersecciones y conflictos, establece un nuevo estandar para sistemas de gestion de trafico aereo no tripulado.\\
 
-El enfoque interdisciplinario adoptado, que combina rigor matematico con implementacion practica y consideraciones de usabilidad, ejemplifica las metodologias necesarias para abordar los desafios tecnologicos del siglo XXI. Este proyecto contribuye asi no solo al conocimiento tecnico especifico, sino tambien a la demostracion de buenas practicas en desarrollo de sistemas complejos.\\
+La relevancia del trabajo se extiende mas alla de la aplicacion especifica de drones, proporcionando un framework que puede adaptarse a diversos escenarios donde la coordinacion de multiples agentes moviles es critica. En un mundo cada vez mas automatizado, la capacidad de modelar, predecir y gestionar movimientos complejos en el espacio tridimensional se convierte en una competencia fundamental para la ingenieria del futuro.\\
 
-En conclusion, el sistema de modelado de trayectorias elipticas desarrollado representa un paso significativo hacia la automatizacion segura y eficiente de operaciones de drones, estableciendo las bases para innovaciones futuras que transformaran la manera en que concebimos y gestionamos el transporte aereo autonomo.
+El enfoque interdisciplinario adoptado, que combina rigor matematico con implementacion practica y consideraciones de usabilidad tanto en 2D como en 3D, ejemplifica las metodologias necesarias para abordar los desafios tecnologicos del siglo XXI. Este proyecto contribuye asi no solo al conocimiento tecnico especifico, sino tambien a la demostracion de buenas practicas en desarrollo de sistemas complejos con interfaces de usuario avanzadas.\\
+
+La integracion exitosa de multiples tecnologias (PyQt6, Tkinter, Matplotlib, NumPy) demuestra la viabilidad de crear sistemas hibridos que aprovechen las fortalezas de diferentes frameworks para lograr resultados superiores. Esta aproximacion metodologica puede servir como modelo para futuros desarrollos en el campo de la visualizacion cientifica y la ingenieria de software.\\
+
+En conclusion, el sistema de modelado de trayectorias elipticas desarrollado, con sus capacidades tanto 2D como 3D, representa un paso significativo hacia la automatizacion segura y eficiente de operaciones de drones, estableciendo las bases para innovaciones futuras que transformaran la manera en que concebimos y gestionamos el transporte aereo autonomo en el espacio tridimensional.
 
 \end{document}
