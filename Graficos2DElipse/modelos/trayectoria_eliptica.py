@@ -45,6 +45,9 @@ class TrayectoriaEliptica:
         else:
             a, b = max(semieje_y, semieje_x), min(semieje_y, semieje_x)
 
+        if a == 0 or b == 0:
+            raise ValueError("Los semiejes no pueden ser cero.")
+
         return cls(h, k, a, b, rut, orientacion)
 
     def calcular_posicion(self, t):

@@ -215,7 +215,8 @@ class MainWindow(QWidget):
             self.status_label.setText(f"Trayectoria para RUT {rut} agregada.")
             self.graficar_trayectorias()
         except Exception as e:
-            QMessageBox.warning(self, "Error", str(e))
+            QMessageBox.warning(self, "Error: ", str(e))
+            
         self.rut_input.clear()
 
     def mostrar_detalle_elipse(self, item):
