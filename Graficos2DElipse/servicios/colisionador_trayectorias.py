@@ -6,56 +6,60 @@ from utils.colision_utils import (
 
 class ColisionadorTrayectorias:
     @staticmethod
-    def hay_colision_trayectorias(elipse1, elipse2, n=200):
-        return hay_colision_trayectorias(elipse1, elipse2, n)
+    def existe_colision_entre_elipses(elipse_1, elipse_2, cantidad_puntos=200):
+        return hay_colision_trayectorias(elipse_1, elipse_2, cantidad_puntos)
     
     @staticmethod
-    def ruta_cruce(e1, e2, n=500, tol=1e-5):
-        return ruta_cruce(e1, e2, n, tol)
+    def calcular_ruta_cruce(elipse_1, elipse_2, cantidad_puntos=500, tolerancia=1e-5):
+        return ruta_cruce(elipse_1, elipse_2, cantidad_puntos, tolerancia)
     
     @staticmethod
-    def puntos_interseccion_aproximados(e1, e2, n=500):
-        return puntos_interseccion_aproximados(e1, e2, n)
+    def calcular_puntos_interseccion_aproximados(elipse_1, elipse_2, cantidad_puntos=500):
+        return puntos_interseccion_aproximados(elipse_1, elipse_2, cantidad_puntos)
 
     @staticmethod
-    def buscar_colisiones_trayectorias(lista_elipses, n=200):
-        colisiones = []
-        for i in range(len(lista_elipses)):
-            for j in range(i + 1, len(lista_elipses)):
-                if hay_colision_trayectorias(lista_elipses[i], lista_elipses[j], n):
-                    colisiones.append((lista_elipses[i], lista_elipses[j]))
-        return colisiones
+    def buscar_pares_con_colision(lista_elipses, cantidad_puntos=200):
+        lista_colisiones = []
+        for indice_1 in range(len(lista_elipses)):
+            for indice_2 in range(indice_1 + 1, len(lista_elipses)):
+                elipse_1 = lista_elipses[indice_1]
+                elipse_2 = lista_elipses[indice_2]
+                if hay_colision_trayectorias(elipse_1, elipse_2, cantidad_puntos):
+                    lista_colisiones.append((elipse_1, elipse_2))
+        return lista_colisiones
 
     @staticmethod
-    def buscar_colisiones_global(trayectorias, detectar_ruta=False, detectar_puntos=False):
-        resultados = []
-        n = len(trayectorias)
-        for i in range(n):
-            for j in range(i+1, n):
-                e1, e2 = trayectorias[i], trayectorias[j]
-                conflicto = False
-                ruta, puntos_cruce = None, None
+    def buscar_colisiones_detalladas(lista_trayectorias, incluir_ruta_cruce=False, incluir_puntos_cruce=False):
+        lista_resultados = []
+        cantidad_trayectorias = len(lista_trayectorias)
+        for indice_1 in range(cantidad_trayectorias):
+            for indice_2 in range(indice_1 + 1, cantidad_trayectorias):
+                elipse_1 = lista_trayectorias[indice_1]
+                elipse_2 = lista_trayectorias[indice_2]
+                hay_conflicto = False
+                ruta_de_cruce = None
+                lista_puntos_cruce = None
 
-                if detectar_ruta:
-                    ruta = ruta_cruce(e1, e2)
-                    if ruta:
-                        conflicto = True
+                if incluir_ruta_cruce:
+                    ruta_de_cruce = ruta_cruce(elipse_1, elipse_2)
+                    if ruta_de_cruce:
+                        hay_conflicto = True
 
-                if detectar_puntos:
-                    puntos_cruce = puntos_interseccion_aproximados(e1, e2)
-                    if puntos_cruce:
-                        conflicto = True
+                if incluir_puntos_cruce:
+                    lista_puntos_cruce = puntos_interseccion_aproximados(elipse_1, elipse_2)
+                    if lista_puntos_cruce:
+                        hay_conflicto = True
 
-                if not detectar_ruta and not detectar_puntos:
-                    ruta = ruta_cruce(e1, e2)
-                    if ruta:
-                        conflicto = True
+                if not incluir_ruta_cruce and not incluir_puntos_cruce:
+                    ruta_de_cruce = ruta_cruce(elipse_1, elipse_2)
+                    if ruta_de_cruce:
+                        hay_conflicto = True
 
-                if conflicto:
-                    resultados.append({
-                        "elipse1": e1,
-                        "elipse2": e2,
-                        "ruta_cruce": ruta,
-                        "puntos_cruce": puntos_cruce,
+                if hay_conflicto:
+                    lista_resultados.append({
+                        "elipse1": elipse_1,
+                        "elipse2": elipse_2,
+                        "ruta_cruce": ruta_de_cruce,
+                        "puntos_cruce": lista_puntos_cruce,
                     })
-        return resultados
+        return lista_resultados

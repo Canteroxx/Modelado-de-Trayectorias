@@ -1,63 +1,57 @@
 import numpy as np
 
-def _ordenar_puntos_curva(puntos):
+def ordenar_puntos_curva(puntos):
     if not puntos:
         return []
-    puntos = np.array(puntos)
-    centro = np.mean(puntos, axis=0)
-    angulos = np.arctan2(puntos[:, 1] - centro[1], puntos[:, 0] - centro[0])
-    orden = np.argsort(angulos)
-    return [tuple(puntos[i]) for i in orden]
+    puntos_array = np.array(puntos)
+    centroide = np.mean(puntos_array, axis=0)
+    angulos = np.arctan2(puntos_array[:, 1] - centroide[1], puntos_array[:, 0] - centroide[0])
+    indices_ordenados = np.argsort(angulos)
+    return [tuple(puntos_array[i]) for i in indices_ordenados]
 
-def hay_colision_trayectorias(elipse1, elipse2, n=200):
-    x1, y1 = elipse1.puntos(n)
-    for xi, yi in zip(x1, y1):
-        if elipse2.contiene_punto(xi, yi):
-            return True
-    x2, y2 = elipse2.puntos(n)
-    for xi, yi in zip(x2, y2):
-        if elipse1.contiene_punto(xi, yi):
-            return True
+def hay_colision_trayectorias(elipse_1, elipse_2, cantidad_puntos=200):
+    x_1, y_1 = elipse_1.puntos(cantidad_puntos)
+    if any(elipse_2.contiene_punto(x, y) for x, y in zip(x_1, y_1)):
+        return True
+    x_2, y_2 = elipse_2.puntos(cantidad_puntos)
+    if any(elipse_1.contiene_punto(x, y) for x, y in zip(x_2, y_2)):
+        return True
     return False
 
-def ruta_cruce(e1, e2, n=500, tol=1e-5):
-    puntos = []
-    x1, y1 = e1.puntos(n)
-    for xi, yi in zip(x1, y1):
-        if e2.contiene_punto(xi, yi):
-            puntos.append((xi, yi))
-    x2, y2 = e2.puntos(n)
-    for xi, yi in zip(x2, y2):
-        if e1.contiene_punto(xi, yi):
-            puntos.append((xi, yi))
-    filtrados = []
-    for px, py in puntos:
-        if not any(np.hypot(px - fx, py - fy) < tol for fx, fy in filtrados):
-            filtrados.append((px, py))
-    return _ordenar_puntos_curva(filtrados)
-
-def puntos_interseccion_aproximados(e1, e2, n=2000, tol=1e-4):
-    x1, y1 = e1.puntos(n)
+def ruta_cruce(elipse_1, elipse_2, cantidad_puntos=500, tolerancia=1e-5):
     puntos_cruce = []
-    for i in range(n-1):
-        esta = e2.contiene_punto(x1[i], y1[i])
-        prox = e2.contiene_punto(x1[i+1], y1[i+1])
-        if esta != prox:
-            mx = (x1[i] + x1[i+1]) / 2
-            my = (y1[i] + y1[i+1]) / 2
-            puntos_cruce.append((mx, my))
+    x_1, y_1 = elipse_1.puntos(cantidad_puntos)
+    puntos_cruce += [(x, y) for x, y in zip(x_1, y_1) if elipse_2.contiene_punto(x, y)]
+    x_2, y_2 = elipse_2.puntos(cantidad_puntos)
+    puntos_cruce += [(x, y) for x, y in zip(x_2, y_2) if elipse_1.contiene_punto(x, y)]
+    puntos_filtrados = []
+    for punto_x, punto_y in puntos_cruce:
+        if not any(np.hypot(punto_x - filtrado_x, punto_y - filtrado_y) < tolerancia for filtrado_x, filtrado_y in puntos_filtrados):
+            puntos_filtrados.append((punto_x, punto_y))
+    return ordenar_puntos_curva(puntos_filtrados)
 
-    x2, y2 = e2.puntos(n)
-    for i in range(n-1):
-        esta = e1.contiene_punto(x2[i], y2[i])
-        prox = e1.contiene_punto(x2[i+1], y2[i+1])
-        if esta != prox:
-            mx = (x2[i] + x2[i+1]) / 2
-            my = (y2[i] + y2[i+1]) / 2
-            puntos_cruce.append((mx, my))
+def puntos_interseccion_aproximados(elipse_1, elipse_2, cantidad_puntos=1000, tolerancia=1e-4):
+    puntos_cruce = []
+    x_1, y_1 = elipse_1.puntos(cantidad_puntos)
+    for i in range(cantidad_puntos - 1):
+        en_otra_elipse_actual = elipse_2.contiene_punto(x_1[i], y_1[i])
+        en_otra_elipse_siguiente = elipse_2.contiene_punto(x_1[i+1], y_1[i+1])
+        if en_otra_elipse_actual != en_otra_elipse_siguiente:
+            punto_medio_x = (x_1[i] + x_1[i+1]) / 2
+            punto_medio_y = (y_1[i] + y_1[i+1]) / 2
+            puntos_cruce.append((punto_medio_x, punto_medio_y))
 
-    filtrados = []
-    for px, py in puntos_cruce:
-        if not any(np.hypot(px - fx, py - fy) < tol for fx, fy in filtrados):
-            filtrados.append((px, py))
-    return _ordenar_puntos_curva(filtrados)
+    x_2, y_2 = elipse_2.puntos(cantidad_puntos)
+    for i in range(cantidad_puntos - 1):
+        en_otra_elipse_actual = elipse_1.contiene_punto(x_2[i], y_2[i])
+        en_otra_elipse_siguiente = elipse_1.contiene_punto(x_2[i+1], y_2[i+1])
+        if en_otra_elipse_actual != en_otra_elipse_siguiente:
+            punto_medio_x = (x_2[i] + x_2[i+1]) / 2
+            punto_medio_y = (y_2[i] + y_2[i+1]) / 2
+            puntos_cruce.append((punto_medio_x, punto_medio_y))
+
+    puntos_filtrados = []
+    for punto_x, punto_y in puntos_cruce:
+        if not any(np.hypot(punto_x - filtrado_x, punto_y - filtrado_y) < tolerancia for filtrado_x, filtrado_y in puntos_filtrados):
+            puntos_filtrados.append((punto_x, punto_y))
+    return ordenar_puntos_curva(puntos_filtrados)

@@ -1,12 +1,26 @@
-def tipo_elipse(a, b):
-    if a > b:
-        return 'horizontal'
-    elif b > a:
-        return 'vertical'
-
 def ecuacion_canonica(tr):
     h, k, a, b = tr.h, tr.k, tr.a, tr.b
     return r"\frac{(x-%s)^2}{%s^2} + \frac{(y-%s)^2}{%s^2} = 1" % (h, a, k, b)
+
+def ecuacion_general(tr):
+    h, k, a, b = tr.h, tr.k, tr.a, tr.b
+    if tr.orientacion == 'vertical':
+        a, b = b, a
+
+    A = b ** 2
+    B = a ** 2
+    D = -2 * b ** 2 * h
+    E = -2 * a ** 2 * k
+    F = b ** 2 * h ** 2 + a ** 2 * k ** 2 - a ** 2 * b ** 2
+
+    terms = [
+        f"{A}x^2",
+        f" + {B}y^2",
+        f"{'+' if D >= 0 else '-'} {abs(D)}x",
+        f"{'+' if E >= 0 else '-'} {abs(E)}y",
+        f"{'+' if F >= 0 else '-'} {abs(F)}"
+    ]
+    return  " ".join(terms) + " = 0"
 
 def excentricidad(a, b):
     if a < b:
@@ -18,8 +32,8 @@ def distancia_focal(a, b):
         a, b = b, a
     return (a ** 2 - b ** 2) ** 0.5
 
-def focos(h, k, a, b):
-    if tipo_elipse(a, b) == 'horizontal':
+def focos(h, k, a, b, tipo=None):
+    if tipo == 'horizontal':
         dx = distancia_focal(a, b)
         F1 = (h + dx, k)
         F2 = (h - dx, k)
@@ -29,9 +43,9 @@ def focos(h, k, a, b):
         F2 = (h, k - dx)
     return F1, F2
 
-def vertices(h, k, a, b):
+def vertices(h, k, a, b, tipo=None):
 
-    if tipo_elipse(a, b) == 'horizontal':
+    if tipo == 'horizontal':
         dx = a
         V1 = (h + dx, k)
         V2 = (h - dx, k)
@@ -54,8 +68,7 @@ def lados_rectos(a, b):
     return (2 * b ** 2 / a)
 
 def parametros_elipse(tr):
-    h, k, a, b = tr.h, tr.k, tr.a, tr.b
-    tipo = tipo_elipse(a, b)   # <-- Nuevo
+    h, k, a, b, tipo = tr.h, tr.k, tr.a, tr.b, tr.orientacion
     e = excentricidad(a, b)
     c = distancia_focal(a, b)
     F1, F2 = focos(h, k, a, b)
@@ -65,7 +78,7 @@ def parametros_elipse(tr):
         "centro": (h, k),
         "semieje_mayor": max(a, b),
         "semieje_menor": min(a, b),
-        "tipo": tipo,                       # <-- Añadir esta línea
+        "tipo": tipo,
         "excentricidad": e,
         "distancia_focal": c,
         "focos": (F1, F2),

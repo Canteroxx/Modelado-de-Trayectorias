@@ -1,25 +1,25 @@
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLineEdit, QListWidget, QLabel, QMessageBox, QComboBox,
-    QDialog, QSizePolicy, QGroupBox, QFormLayout, QDoubleSpinBox, QSlider,
-    
+    QDialog, QSizePolicy, QGroupBox, QFormLayout, QDoubleSpinBox
 )
 from PyQt6.QtGui import QPixmap
+
 import io
 import sys
 
 from PyQt6.QtCore import Qt
 import pyqtgraph as pg
-import numpy as np
 
 from modelos.trayectoria_eliptica import TrayectoriaEliptica
 from servicios.colisionador_trayectorias import ColisionadorTrayectorias
-from utils.trayectoria_utils import ecuacion_canonica, texto_parametros_elipse, parametros_elipse
+from utils.graficos_utils_pg import agregar_puntos_interactivos
+from utils.trayectoria_utils import ecuacion_canonica, ecuacion_general, texto_parametros_elipse, parametros_elipse
 from utils.graficos_utils_pg import (
-    graficar_elipses_pg,
-    graficar_centros_pg,
-    graficar_rutas_puntos_colision_pg,
-    graficar_dos_elipses_pg
+    graficar_elipses,
+    graficar_centros,
+    graficar_rutas_y_puntos_colision,
+    graficar_dos_elipses
 )
 
 import matplotlib.pyplot as plt  # Solo para el label de ecuación
@@ -40,7 +40,10 @@ class VentanaDetalleElipse(QDialog):
         eq_label = QLabel("<b>Ecuación canónica:</b>")
         layout.addWidget(eq_label)
         label_img = self.label_ecuacion_latex(ecuacion_canonica(tr))
+        formula_general = ecuacion_general(tr)
+        latex_label = self.label_ecuacion_latex(formula_general)
         layout.addWidget(label_img, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(latex_label)
 
         # Parámetros matemáticos
         param_label = QLabel("<b>Parámetros:</b>")
@@ -90,15 +93,21 @@ class VentanaInterseccion(QDialog):
         super().__init__(parent)
         self.setWindowTitle(f"Intersección: Elipse {idx1+1} y Elipse {idx2+1}")
         layout = QVBoxLayout(self)
-        # PyQtGraph plot widget
         self.pg_widget = pg.GraphicsLayoutWidget()
         layout.addWidget(self.pg_widget)
         self.plot_interseccion(elipse1, elipse2, ruta_cruce, puntos_cruce, idx1, idx2)
 
-    def plot_interseccion(self, e1, e2, ruta, puntos_cruce, idx1, idx2):
+    def plot_interseccion(self, elipse1, elipse2, ruta_cruce, puntos_cruce, idx1, idx2):
         plot = self.pg_widget.addPlot()
-        graficar_dos_elipses_pg(e1, e2, idx1, idx2, ruta, puntos_cruce, plot)
+        graficar_dos_elipses(elipse1, elipse2, idx1, idx2, ruta_cruce, puntos_cruce, plot)
 
+        # Agregar centros interactivos
+        centros = [(elipse1.h, elipse1.k), (elipse2.h, elipse2.k)]
+        agregar_puntos_interactivos(plot, centros, nombre="Centro")
+
+        # Agregar puntos de intersección interactivos
+        if puntos_cruce:
+            agregar_puntos_interactivos(plot, puntos_cruce, nombre="Cruce")
 # ------------------ Ventana principal ------------------
 
 class MainWindow(QWidget):
@@ -113,7 +122,6 @@ class MainWindow(QWidget):
         button_layout = QHBoxLayout()
         col_inter_layout = QHBoxLayout()
         self.editor_box = self.create_editor_box()
-        
 
         # Widgets
         self.rut_input = QLineEdit()
@@ -124,7 +132,6 @@ class MainWindow(QWidget):
         self.list_widget.setMaximumHeight(120)
         self.list_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.list_widget.itemDoubleClicked.connect(self.mostrar_detalle_elipse)
-
 
         self.graficar_btn = QPushButton("Graficar 2D")
         self.colisiones_btn = QPushButton("Buscar colisiones globales")
@@ -142,12 +149,6 @@ class MainWindow(QWidget):
         self.plot.showGrid(x=True, y=True)
         self.plot.setAspectLocked(True)
 
-        # --- PYQTGRAPH main widget ---
-        self.pg_widget = pg.GraphicsLayoutWidget()
-        self.plot = self.pg_widget.addPlot()
-        self.plot.showGrid(x=True, y=True)
-
-        # Layout organization
         input_layout.addWidget(self.rut_input)
         input_layout.addWidget(self.add_btn)
         button_layout.addWidget(self.graficar_btn)
@@ -162,7 +163,6 @@ class MainWindow(QWidget):
         layout.addLayout(col_inter_layout)
         layout.addWidget(self.pg_widget)
         layout.addWidget(self.status_label)
-
         layout.addWidget(self.editor_box)
         layout.addWidget(self.pg_widget)
         layout.addWidget(self.status_label)
@@ -191,7 +191,6 @@ class MainWindow(QWidget):
         for w in [self.spin_h, self.spin_k, self.spin_a, self.spin_b]:
             w.setRange(-1000, 1000)
 
-        # Al cambiar cualquier parámetro, actualiza el gráfico
         self.spin_h.valueChanged.connect(self.editar_elipse_seleccionada)
         self.spin_k.valueChanged.connect(self.editar_elipse_seleccionada)
         self.spin_a.valueChanged.connect(self.editar_elipse_seleccionada)
@@ -224,7 +223,6 @@ class MainWindow(QWidget):
         if 0 <= idx < len(self.trayectorias):
             tr = self.trayectorias[idx]
             def eliminar_callback(eliminada):
-                # Borra de todas partes
                 del self.trayectorias[idx]
                 self.list_widget.takeItem(idx)
                 self.combo1.removeItem(idx)
@@ -264,15 +262,22 @@ class MainWindow(QWidget):
 
     def graficar_trayectorias(self):
         self.plot.clear()
-        graficar_elipses_pg(self.trayectorias, self.plot)
-        graficar_centros_pg(self.trayectorias, self.plot)
         colores = ["blue", "green", "orange", "purple", "cyan", "brown", "magenta", "gold", "pink"]
-        graficar_elipses_pg(self.trayectorias, self.plot, colores)
-        graficar_centros_pg(self.trayectorias, self.plot)
-        resultados = ColisionadorTrayectorias.buscar_colisiones_global(
-            self.trayectorias, detectar_ruta=True, detectar_puntos=True
-        )
-        graficar_rutas_puntos_colision_pg(resultados, self.trayectorias, self.plot)
+        graficar_elipses(self.trayectorias, self.plot, colores)
+        graficar_centros(self.trayectorias, self.plot)
+        resultados = ColisionadorTrayectorias.buscar_colisiones_detalladas(self.trayectorias, incluir_ruta_cruce=True, incluir_puntos_cruce=True)
+        graficar_rutas_y_puntos_colision(resultados, self.trayectorias, self.plot)
+        centros = [(t.h, t.k) for t in self.trayectorias]
+        agregar_puntos_interactivos(self.plot, centros, nombre='Centro')
+
+        # Mostrar puntos de cruce interactivos
+        puntos_cruce = []
+        for colision in resultados:
+            if colision['puntos_cruce']:
+                puntos_cruce.extend(colision['puntos_cruce'])
+        if puntos_cruce:
+            agregar_puntos_interactivos(self.plot, puntos_cruce, nombre='Cruce')
+
         self.plot.setTitle("Trayectorias, centros (O1...), rutas de cruce (rojo), puntos de cruce (negro)")
         self.plot.setAspectLocked(True)
 
@@ -280,12 +285,12 @@ class MainWindow(QWidget):
         if len(self.trayectorias) < 2:
             self.status_label.setText("Agrega al menos dos trayectorias.")
             return
-        colisiones = ColisionadorTrayectorias.buscar_colisiones_trayectorias(self.trayectorias)
+        colisiones = ColisionadorTrayectorias.buscar_pares_con_colision(self.trayectorias)
         if not colisiones:
             self.status_label.setText("No hay colisiones detectadas.")
         else:
             msg = "¡Riesgo de colisión entre:\n"
-            msg += '\n'.join([f"{e1.rut} y {e2.rut}" for e1, e2 in colisiones])
+            msg += '\n'.join([f"{el1.rut} y {el2.rut}" for el1, el2 in colisiones])
             self.status_label.setText(msg)
 
     def abrir_ventana_colision(self):
@@ -294,10 +299,10 @@ class MainWindow(QWidget):
         if idx1 == idx2 or idx1 == -1 or idx2 == -1 or idx1 >= len(self.trayectorias) or idx2 >= len(self.trayectorias):
             QMessageBox.warning(self, "Selección inválida", "Debes seleccionar dos trayectorias diferentes.")
             return
-        e1, e2 = self.trayectorias[idx1], self.trayectorias[idx2]
-        ruta = ColisionadorTrayectorias.ruta_cruce(e1, e2)
-        puntos_cruce = ColisionadorTrayectorias.puntos_interseccion_aproximados(e1, e2)
-        ventana = VentanaInterseccion(e1, e2, ruta, puntos_cruce, idx1, idx2, parent=self)
+        elipse_1, elipse_2 = self.trayectorias[idx1], self.trayectorias[idx2]
+        ruta = ColisionadorTrayectorias.calcular_ruta_cruce(elipse_1, elipse_2)
+        puntos_cruce = ColisionadorTrayectorias.calcular_puntos_interseccion_aproximados(elipse_1, elipse_2)
+        ventana = VentanaInterseccion(elipse_1, elipse_2, ruta, puntos_cruce, idx1, idx2, parent=self)
         ventana.exec()
 
 if __name__ == "__main__":
