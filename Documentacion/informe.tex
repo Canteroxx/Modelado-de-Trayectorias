@@ -1,0 +1,453 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{booktabs}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+% Configuracion de colores para codigo
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+% Configuracion de listings
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+% Configuracion de headers
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Modelado de Trayectorias Elipticas para Drones}
+\lhead{Universidad Catolica de Temuco}
+\cfoot{\thepage}
+
+% PORTADA
+\begin{document}
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\LARGE\textbf{UNIVERSIDAD CATOLICA DE TEMUCO}}\\[0.5cm]
+    {\large Ingenieria Civil en Informatica}\\[2cm]
+    {\large MAT1186 Introduccion al Calculo}\\[2cm]
+    
+    \rule{\linewidth}{0.2mm} \\[0.4cm]
+    {\huge\bfseries MODELADO DE TRAYECTORIAS ELIPTICAS PARA DRONES}\\[0.2cm]
+    \rule{\linewidth}{0.2mm} \\[1.5cm]
+
+    {\large Profesor Gustavo Sandoval Cofré}\\[0.5cm]
+    {\large Esban Vejar Chavez, Joaquin Cantero Olivera, Oscar Zapata Benavides y Fabian Garcia Valdebenito}\\[0.5cm]
+
+    {\large 06 de Junio de 2025}\\
+    
+    \vfill
+\end{titlepage}
+
+% INDICE
+\tableofcontents
+\newpage
+
+% INTRODUCCION
+\section{Introduccion}
+
+En la era actual de la automatizacion y la inteligencia artificial, los sistemas de drones autonomos han emergido como una tecnologia revolucionaria con aplicaciones que abarcan desde la logistica y el transporte hasta la agricultura de precision y la vigilancia de seguridad. Sin embargo, el crecimiento exponencial en el uso de estos vehiculos aereos no tripulados (UAV) ha traido consigo desafios significativos en terminos de navegacion segura y prevencion de colisiones en espacios aereos compartidos.\\
+
+El modelado matematico de trayectorias representa un componente fundamental en el desarrollo de sistemas de navegacion autonoma confiables. Entre las diversas formas geometricas utilizadas para describir rutas de vuelo, las trayectorias elipticas ofrecen ventajas particulares debido a su capacidad para representar patrones de movimiento naturales y eficientes desde el punto de vista energetico, caracteristicas especialmente relevantes en aplicaciones donde la autonomia de bateria es critica.
+
+\subsection{Problematica Abordada}
+
+El problema central que aborda este proyecto es la necesidad de un sistema robusto y eficiente para:
+
+\begin{enumerate}
+    \item Generar trayectorias elipticas personalizadas basadas en identificadores unicos (RUT chileno).
+    \item Detectar potenciales conflictos entre multiples trayectorias en tiempo real.
+    \item Visualizar y analizar escenarios de riesgo para la toma de decisiones operacionales.
+    \item Proporcionar una base matematica solida para futuros desarrollos en sistemas de gestion de trafico aereo no tripulado.
+\end{enumerate}
+
+\subsection{Alcance y Objetivos}
+
+Este informe presenta el desarrollo e implementacion de un sistema computacional que integra modelado matematico avanzado con tecnicas de visualizacion y analisis de datos, especificamente disenado para:\\
+
+\textbf{Objetivo General:}
+Desarrollar un sistema integral de modelado y analisis de trayectorias elipticas para drones autonomos que garantice operaciones seguras y eficientes en entornos de multiples vehiculos.\\
+
+\textbf{Objetivos Especificos:}
+\begin{itemize}
+    \item Implementar algoritmos de generacion de trayectorias elipticas basados en parametros derivados de identificadores unicos.
+    \item Desarrollar algoritmos de deteccion de colisiones que identifiquen intersecciones y zonas de riesgo entre trayectorias.
+    \item Crear interfaces de usuario intuitivas para la visualizacion y analisis de escenarios complejos.
+    \item Validar la efectividad del sistema mediante pruebas con multiples configuraciones de trayectorias.
+    \item Establecer las bases para futuras aplicaciones en gestion de trafico aereo no tripulado.
+\end{itemize}
+
+\section{Desarrollo}
+
+\subsection{Marco Teorico}
+
+\subsubsection{Fundamentos Matematicos de las Trayectorias Elipticas}
+
+Una elipse en el plano cartesiano puede definirse como el lugar geometrico de todos los puntos cuya suma de distancias a dos puntos fijos (focos) es constante. Matematicamente, una elipse con centro en $(h,k)$ y orientacion $\theta$ se describe mediante la ecuacion parametrica:
+
+\begin{align}
+x(t) &= h + a\cos(t)\cos(\theta) - b\sin(t)\sin(\theta) \\
+y(t) &= k + a\cos(t)\sin(\theta) + b\sin(t)\cos(\theta)
+\end{align}
+
+donde:
+\begin{itemize}
+    \item $(h,k)$ representa las coordenadas del centro de la elipse
+    \item $a$ es la longitud del semieje mayor
+    \item $b$ es la longitud del semieje menor
+    \item $\theta$ es el angulo de rotacion respecto al eje x
+    \item $t \in [0, 2\pi]$ es el parametro que describe la posicion a lo largo de la trayectoria
+\end{itemize}
+
+La ecuacion canonica de una elipse se expresa como:
+
+\[\frac{(x-h)^2}{a^2} + \frac{(y-k)^2}{b^2} = 1\]
+
+Esta representacion matematica permite calcular de manera eficiente:
+\begin{itemize}
+    \item Posicion instantanea del drone en cualquier momento $t$
+    \item Velocidad y aceleracion mediante derivacion de las ecuaciones parametricas
+    \item Distancias y tiempos de transito entre puntos especificos
+    \item Verificacion de pertenencia de puntos a la trayectoria
+\end{itemize}
+
+\subsubsection{Generacion de Parametros desde RUT}
+
+El sistema implementa un algoritmo innovador que transforma el Rol Unico Tributario (RUT) chileno en parametros elipticos unicos y reproducibles. Este enfoque garantiza que cada usuario del sistema genere trayectorias consistentes y personalizadas.\\
+
+El algoritmo de transformacion sigue estos pasos:
+
+\begin{enumerate}
+    \item \textbf{Validacion del formato}: Verificacion de la estructura RUT (XXXXXXXX-Y)
+    \item \textbf{Extraccion de digitos}: Separacion de digitos significativos del digito verificador
+    \item \textbf{Calculo del grupo}: Determinacion basada en el digito verificador (par/impar)
+    \item \textbf{Asignacion de parametros}: Mapeo sistematico de digitos a coordenadas y dimensiones
+\end{enumerate}
+
+La logica de asignacion se implementa como:
+
+\begin{lstlisting}[language=Python, caption=Algoritmo de generacion de parametros elipticos]
+def desde_rut(cls, rut: str):
+    # Procesamiento y validacion del RUT
+    partes = rut.strip().split('-')
+    rut_sin_dv = partes[0].replace('.', '')
+    dv = partes[1].upper()
+    
+    # Extraccion de digitos significativos
+    digits = [int(d) for d in rut_sin_dv if d.isdigit()]
+    dv_int = int(dv) if dv != 'K' else 10
+    
+    # Asignacion de coordenadas del centro
+    h, k = digits[0], digits[1]
+    
+    # Calculo de semiejes segun paridad del DV
+    if dv_int % 2 == 1:  # DV impar
+        a = digits[2] + digits[3]
+        b = digits[4] + digits[5]
+        theta = 0 if digits[5] % 2 == 0 else np.pi / 2
+    else:  # DV par
+        a = digits[5] + digits[6]
+        b = digits[4] + digits[2]
+        theta = 0 if digits[3] % 2 == 0 else np.pi / 2
+    
+    return cls(h, k, a, b, theta, rut)
+\end{lstlisting}
+
+\subsubsection{Algoritmos de Deteccion de Colisiones}
+
+La deteccion de colisiones constituye el nucleo del sistema de seguridad. Se implementaron tres niveles de analisis:\\
+
+\textbf{1. Deteccion Basica de Interseccion}\\
+
+El algoritmo fundamental verifica si puntos de una trayectoria eliptica se encuentran dentro del area definida por otra elipse:
+
+\begin{lstlisting}[language=Python, caption=Algoritmo de deteccion basica]
+def hay_colision_trayectorias(elipse1, elipse2, n=200):
+    # Verificar puntos de elipse1 dentro de elipse2
+    x1, y1 = elipse1.puntos(n)
+    for xi, yi in zip(x1, y1):
+        if elipse2.contiene_punto(xi, yi):
+            return True
+    
+    # Verificar puntos de elipse2 dentro de elipse1
+    x2, y2 = elipse2.puntos(n)
+    for xi, yi in zip(x2, y2):
+        if elipse1.contiene_punto(xi, yi):
+            return True
+    
+    return False
+\end{lstlisting}
+
+\textbf{2. Identificacion de Rutas de Cruce}\\
+
+Este algoritmo avanzado mapea todas las regiones donde las trayectorias se solapan:
+
+\begin{lstlisting}[language=Python, caption=Algoritmo de rutas de cruce]
+def ruta_cruce(e1, e2, n=500, tol=1e-5):
+    puntos = []
+    
+    # Recopilar puntos de interseccion
+    x1, y1 = e1.puntos(n)
+    for xi, yi in zip(x1, y1):
+        if e2.contiene_punto(xi, yi):
+            puntos.append((xi, yi))
+    
+    x2, y2 = e2.puntos(n)
+    for xi, yi in zip(x2, y2):
+        if e1.contiene_punto(xi, yi):
+            puntos.append((xi, yi))
+    
+    # Filtrar puntos duplicados
+    filtrados = []
+    for px, py in puntos:
+        if not any(np.hypot(px - fx, py - fy) < tol 
+                  for fx, fy in filtrados):
+            filtrados.append((px, py))
+    
+    return filtrados
+\end{lstlisting}
+
+\textbf{3. Localizacion de Puntos Criticos}\\
+
+Identifica ubicaciones especificas donde las trayectorias se intersectan:
+
+\begin{lstlisting}[language=Python, caption=Algoritmo de puntos de interseccion]
+def puntos_interseccion_aproximados(e1, e2, n=500):
+    puntos_cruce = []
+    
+    # Analizar transiciones de contencion
+    x1, y1 = e1.puntos(n)
+    dentro_anterior = e2.contiene_punto(x1[0], y1[0])
+    
+    for i in range(1, n):
+        dentro_actual = e2.contiene_punto(x1[i], y1[i])
+        if dentro_actual != dentro_anterior:
+            puntos_cruce.append((x1[i], y1[i]))
+        dentro_anterior = dentro_actual
+    
+    return puntos_cruce
+\end{lstlisting}
+
+\subsection{Arquitectura del Sistema}
+
+\subsubsection{Diseno Modular}
+
+El sistema se estructura siguiendo principios de ingenieria de software modular, organizandose en las siguientes capas:
+
+\textbf{Capa de Modelos}
+\begin{itemize}
+    \item \texttt{TrayectoriaEliptica}: Clase principal que encapsula la logica matematica de las trayectorias
+    \item Metodos para calculo de posicion, velocidad y verificacion de pertenencia
+    \item Interfaz para generacion desde RUT y representacion grafica
+\end{itemize}
+
+\textbf{Capa de Servicios}
+\begin{itemize}
+    \item \texttt{ColisionadorTrayectorias}: Servicio especializado en analisis de conflictos
+    \item Algoritmos optimizados para deteccion en tiempo real
+    \item Gestion de multiples trayectorias simultaneas
+\end{itemize}
+
+\textbf{Capa de Utilidades}
+\begin{itemize}
+    \item \texttt{graficos\_utils}: Funciones de visualizacion y renderizado
+    \item \texttt{colision\_utils}: Algoritmos de bajo nivel para calculos geometricos
+    \item \texttt{trayectoria\_utils}: Utilidades matematicas auxiliares
+\end{itemize}
+
+\textbf{Capa de Presentacion}
+\begin{itemize}
+    \item Interfaz grafica basada en PyQt6 para usuarios avanzados
+    \item Interfaz de linea de comandos para operaciones automatizadas
+    \item Sistema de visualizacion interactiva con Matplotlib
+\end{itemize}
+
+\subsubsection{Implementacion de Interfaces}
+
+\textbf{Interfaz Grafica de Usuario (GUI)}
+
+La GUI implementada en PyQt6 proporciona una experiencia de usuario intuitiva y profesional:
+
+\begin{itemize}
+    \item \textbf{Panel de entrada}: Campo para ingreso de RUT con validacion en tiempo real
+    \item \textbf{Lista de trayectorias}: Visualizacion tabular de todas las trayectorias activas
+    \item \textbf{Area de visualizacion}: Canvas de Matplotlib integrado para graficos 2D
+    \item \textbf{Controles de analisis}: Botones para deteccion global y analisis especifico
+    \item \textbf{Ventanas modales}: Dialogos especializados para analisis detallado
+\end{itemize}
+
+La arquitectura de la GUI sigue el patron Model-View-Controller (MVC):
+
+\begin{lstlisting}[language=Python, caption=Estructura principal de la GUI]
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.trayectorias = []  # Modelo de datos
+        self.setup_ui()         # Configuracion de vista
+        self.connect_events()   # Configuracion de controladores
+    
+    def agregar_trayectoria(self):
+        # Validacion y creacion de nueva trayectoria
+        
+    def graficar_trayectorias(self):
+        # Renderizado de visualizacion 2D
+        
+    def buscar_colisiones(self):
+        # Ejecucion de analisis de conflictos
+\end{lstlisting}
+
+\textbf{Interfaz de Linea de Comandos (CLI)}
+
+La CLI ofrece funcionalidad completa para usuarios tecnicos y sistemas automatizados:
+
+\begin{itemize}
+    \item Menu interactivo con navegacion numerica
+    \item Comandos para todas las operaciones principales
+    \item Salida formateada para analisis y reporting
+    \item Compatibilidad con scripts y automatizacion
+\end{itemize}
+
+\subsection{Algoritmos de Visualizacion}
+
+\subsubsection{Renderizado de Trayectorias}
+
+El sistema de visualizacion utiliza Matplotlib para generar representaciones graficas precisas y esteticamente atractivas:
+
+\begin{lstlisting}[language=Python, caption=Funcion de graficado de elipses]
+def graficar_elipses(trayectorias, ax, colores=None, 
+                    with_labels=True, linewidth=2):
+    if colores is None:
+        colores = ["blue", "green", "orange", "purple", 
+                  "cyan", "brown", "magenta", "gold", "pink"]
+    
+    for i, tr in enumerate(trayectorias, 1):
+        color = colores[(i - 1) % len(colores)]
+        x, y = tr.puntos()
+        label = f"RUT: {tr.rut}" if with_labels else None
+        ax.plot(x, y, color=color, linewidth=linewidth, label=label)
+    
+    if with_labels:
+        ax.legend()
+    ax.set_aspect('equal')
+\end{lstlisting}
+
+\subsubsection{Visualizacion de Conflictos}
+
+La representacion visual de colisiones utiliza un esquema de colores intuitivo:
+
+\begin{itemize}
+    \item \textbf{Azul/Verde}: Trayectorias normales sin conflictos
+    \item \textbf{Rojo}: Rutas de cruce identificadas
+    \item \textbf{Negro}: Puntos criticos de interseccion
+    \item \textbf{Magenta/Naranja}: Centros de trayectorias
+\end{itemize}
+
+\subsection{Validacion y Pruebas}
+
+\subsubsection{Casos de Prueba}
+
+Se desarrollo una suite completa de casos de prueba para validar la funcionalidad del sistema:
+
+\begin{enumerate}
+    \item \textbf{Pruebas de validacion de RUT}:
+    \begin{itemize}
+        \item RUTs validos con diferentes formatos
+        \item RUTs invalidos con caracteres incorrectos
+        \item Casos limite con longitudes minimas y maximas
+    \end{itemize}
+    
+    \item \textbf{Pruebas de generacion de trayectorias}:
+    \begin{itemize}
+        \item Consistencia en la generacion (mismo RUT = misma trayectoria)
+        \item Diversidad (RUTs diferentes = trayectorias diferentes)
+        \item Validez matematica de los parametros generados
+    \end{itemize}
+    
+    \item \textbf{Pruebas de deteccion de colisiones}:
+    \begin{itemize}
+        \item Trayectorias claramente separadas (sin colision)
+        \item Trayectorias con interseccion parcial
+        \item Trayectorias concentricas (una dentro de otra)
+        \item Casos limite con tangencias
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Aplicaciones en Ingenieria}
+
+\subsubsection{Gestion de Trafico Aereo No Tripulado}
+
+El sistema desarrollado tiene aplicaciones directas en la gestion de trafico aereo para drones:
+
+\begin{itemize}
+    \item \textbf{Control de trafico}: Monitoreo en tiempo real de multiples vehiculos
+    \item \textbf{Planificacion de rutas}: Optimizacion de trayectorias para evitar conflictos
+    \item \textbf{Respuesta a emergencias}: Deteccion temprana y mitigacion de riesgos
+    \item \textbf{Coordinacion de flotas}: Sincronizacion de operaciones multiples
+\end{itemize}
+
+\subsubsection{Agricultura de Precision}
+
+En aplicaciones agricolas, el sistema puede coordinar multiples drones para:
+
+\begin{itemize}
+    \item Fumigacion sincronizada de grandes extensiones
+    \item Monitoreo simultaneo con sensores especializados
+    \item Optimizacion de cobertura evitando solapamientos
+    \item Coordinacion de drones de diferentes capacidades
+\end{itemize}
+
+\subsubsection{Logistica y Transporte}
+
+Para operaciones logisticas urbanas:
+
+\begin{itemize}
+    \item Rutas de entrega optimizadas en entornos urbanos complejos
+    \item Coordinacion de multiples puntos de distribucion
+    \item Gestion de ventanas temporales de operacion
+    \item Integracion con sistemas de gestion de inventario
+\end{itemize}
+
+\section{Conclusiones}
+
+Este proyecto demuestra que la interseccion entre matematicas avanzadas, ingenieria de software y aplicaciones practicas puede generar soluciones innovadoras para desafios tecnologicos contemporaneos. El sistema desarrollado no solo aborda necesidades actuales en el campo de los drones autonomos, sino que tambien establece una base metodologica para futuros desarrollos en sistemas de navegacion autonoma.\\
+
+La relevancia del trabajo se extiende mas alla de la aplicacion especifica de drones, proporcionando un framework que puede adaptarse a diversos escenarios donde la coordinacion de multiples agentes moviles es critica. En un mundo cada vez mas automatizado, la capacidad de modelar, predecir y gestionar movimientos complejos se convierte en una competencia fundamental para la ingenieria del futuro.\\
+
+El enfoque interdisciplinario adoptado, que combina rigor matematico con implementacion practica y consideraciones de usabilidad, ejemplifica las metodologias necesarias para abordar los desafios tecnologicos del siglo XXI. Este proyecto contribuye asi no solo al conocimiento tecnico especifico, sino tambien a la demostracion de buenas practicas en desarrollo de sistemas complejos.\\
+
+En conclusion, el sistema de modelado de trayectorias elipticas desarrollado representa un paso significativo hacia la automatizacion segura y eficiente de operaciones de drones, estableciendo las bases para innovaciones futuras que transformaran la manera en que concebimos y gestionamos el transporte aereo autonomo.
+
+\end{document}
